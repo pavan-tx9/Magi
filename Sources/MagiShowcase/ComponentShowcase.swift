@@ -20,6 +20,8 @@ struct ComponentShowcase: View {
     @State var showConfirm = false
     @State var showDestructive = false
 
+    var theme: MagiTheme { .nerv }
+
     var body: some View {
         HStack(spacing: 0) {
             sidebarPanel
@@ -31,9 +33,9 @@ struct ComponentShowcase: View {
             .primary(label: "Acknowledge", action: { showModal = false }),
         ]) {
             VStack(alignment: .leading, spacing: MagiSpacing.sm) {
-                DataReadout(label: "Uptime", value: "04:32:17", color: MagiColor.accentCyan)
-                DataReadout(label: "Memory", value: "87% utilized", color: MagiColor.accentAmber)
-                DataReadout(label: "Status", value: "Nominal", color: MagiColor.accentGreen)
+                DataReadout(label: "Uptime", value: "04:32:17", color: theme.accentSecondary)
+                DataReadout(label: "Memory", value: "87% utilized", color: theme.accentWarning)
+                DataReadout(label: "Status", value: "Nominal", color: theme.accentSuccess)
             }
         }
         .magiConfirm(
@@ -51,6 +53,8 @@ struct ComponentShowcase: View {
             destructive: true,
             onConfirm: {}
         )
+        .magiTheme(theme)
+        .onAppear { syncWindowBackground() }
     }
 
     // MARK: - Sidebar
@@ -64,16 +68,16 @@ struct ComponentShowcase: View {
             sidebarFooter
         }
         .frame(width: 180)
-        .background(MagiColor.bgPrimary)
+        .background(theme.bgPrimary)
         .overlay(alignment: .trailing) {
-            Rectangle().fill(MagiColor.border).frame(width: 1)
+            Rectangle().fill(theme.border).frame(width: 1)
         }
     }
 
     private var headerBlock: some View {
         VStack(alignment: .leading, spacing: 2) {
             GlowText(text: "MAGI", font: MagiFont.headingLarge)
-            Text("DESIGN SYSTEM")
+            Text("NERV")
                 .magiLabelWide()
         }
         .padding(.horizontal, MagiSpacing.md)
@@ -104,11 +108,11 @@ struct ComponentShowcase: View {
                     Spacer()
                     StatusBadge(status: .nominal)
                 }
-                MagiProgress(value: 0.72, color: MagiColor.accentCyan, height: 3)
+                MagiProgress(value: 0.72, color: theme.accentSecondary, height: 3)
                 Text("MAGI v0.1.0")
                     .font(MagiFont.tiny)
                     .tracking(1)
-                    .foregroundStyle(MagiColor.textMuted)
+                    .foregroundStyle(theme.textMuted)
             }
             .padding(MagiSpacing.md)
         }
@@ -140,20 +144,30 @@ struct ComponentShowcase: View {
                     dataReadoutSection
                     taskListSection
                 case .visuals:
+                    syncRateSection
+                    powerSection
                     gaugesSection
                     oscilloscopeSection
                     barChartSection
                     sparklineSection
-                    radarSection
-                    hexGridSection
-                    dataStreamSection
+                    if theme.style.showDecorations {
+                        radarSection
+                        hexGridSection
+                        dataStreamSection
+                        reticleSection
+                    }
                     bootSequenceSection
-                    reticleSection
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(MagiSpacing.lg)
             .padding(.bottom, 40)
         }
-        .background(MagiColor.bgPrimary)
+        .background(theme.bgPrimary)
+    }
+
+    private func syncWindowBackground() {
+        guard let window = NSApp.windows.first else { return }
+        window.backgroundColor = NSColor(theme.bgPrimary)
     }
 }

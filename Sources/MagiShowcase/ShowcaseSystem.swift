@@ -7,24 +7,24 @@ extension ComponentShowcase {
         VStack(alignment: .leading, spacing: MagiSpacing.sm) {
             SectionHeader(title: "Color Palette")
 
-            Text("12 design tokens. Dark background, light text, 4 accent colors.")
+            Text("Design tokens for the NERV theme.")
                 .magiBodyMuted()
 
             HStack(spacing: 6) {
-                colorSwatch(MagiColor.bgPrimary, "BG-PRI")
-                colorSwatch(MagiColor.bgSecondary, "BG-SEC")
-                colorSwatch(MagiColor.bgSurface, "SURFACE")
-                colorSwatch(MagiColor.border, "BORDER")
-                colorSwatch(MagiColor.textPrimary, "TEXT")
-                colorSwatch(MagiColor.textMuted, "MUTED")
+                colorSwatch(theme.bgPrimary, "BG-PRI")
+                colorSwatch(theme.bgSecondary, "BG-SEC")
+                colorSwatch(theme.bgSurface, "SURFACE")
+                colorSwatch(theme.border, "BORDER")
+                colorSwatch(theme.textPrimary, "TEXT")
+                colorSwatch(theme.textMuted, "MUTED")
             }
 
             HStack(spacing: 6) {
-                colorSwatch(MagiColor.accentRed, "RED")
-                colorSwatch(MagiColor.accentAmber, "AMBER")
-                colorSwatch(MagiColor.accentGreen, "GREEN")
-                colorSwatch(MagiColor.accentCyan, "CYAN")
-                colorSwatch(MagiColor.danger, "DANGER")
+                colorSwatch(theme.accent, "ACCENT")
+                colorSwatch(theme.accentSecondary, "SECOND")
+                colorSwatch(theme.accentWarning, "WARNING")
+                colorSwatch(theme.accentSuccess, "SUCCESS")
+                colorSwatch(theme.danger, "DANGER")
             }
         }
     }
@@ -34,12 +34,12 @@ extension ComponentShowcase {
             Rectangle()
                 .fill(color)
                 .frame(width: 40, height: 24)
-                .overlay { Rectangle().stroke(MagiColor.border, lineWidth: 1) }
+                .overlay { Rectangle().stroke(theme.border, lineWidth: 1) }
 
             Text(label)
                 .font(.system(size: 8, weight: .medium, design: .monospaced))
                 .tracking(0.5)
-                .foregroundStyle(MagiColor.textMuted)
+                .foregroundStyle(theme.textMuted)
         }
     }
 
@@ -64,12 +64,12 @@ extension ComponentShowcase {
 
             Text("Body Medium — 13px Medium weight")
                 .font(MagiFont.bodyMedium)
-                .foregroundStyle(MagiColor.textPrimary)
+                .foregroundStyle(theme.textPrimary)
 
             Text("LABEL — 11PX MEDIUM UPPERCASE TRACKING")
                 .font(MagiFont.label)
                 .tracking(1)
-                .foregroundStyle(MagiColor.textMuted)
+                .foregroundStyle(theme.textMuted)
 
             Text("TINY — 10PX METADATA AND STATUS READOUTS")
                 .magiLabel()
@@ -103,17 +103,17 @@ extension ComponentShowcase {
             Text(label)
                 .font(MagiFont.tiny)
                 .tracking(1.5)
-                .foregroundStyle(MagiColor.textMuted)
+                .foregroundStyle(theme.textMuted)
                 .frame(width: 24, alignment: .trailing)
 
             Rectangle()
-                .fill(MagiColor.accentCyan.opacity(0.5))
+                .fill(theme.accentSecondary.opacity(0.5))
                 .frame(width: value * 6, height: 12)
-                .overlay { Rectangle().stroke(MagiColor.accentCyan, lineWidth: 1) }
+                .overlay { Rectangle().stroke(theme.accentSecondary, lineWidth: 1) }
 
             Text("\(Int(value))px")
                 .font(MagiFont.tiny)
-                .foregroundStyle(MagiColor.textMuted)
+                .foregroundStyle(theme.textMuted)
         }
     }
 
@@ -142,7 +142,7 @@ extension ComponentShowcase {
                         .magiBody()
                 }
                 .padding(MagiSpacing.md)
-                .magiPanel(accent: MagiColor.accentCyan)
+                .magiPanel(accent: theme.accentSecondary)
             }
 
             HStack(spacing: MagiSpacing.sm) {
@@ -162,7 +162,7 @@ extension ComponentShowcase {
                         .magiBody()
                 }
                 .padding(MagiSpacing.md)
-                .magiChamferPanel(cut: 8, accent: MagiColor.accentRed)
+                .magiChamferPanel(cut: 8, accent: theme.accent)
             }
 
             VStack(alignment: .leading, spacing: MagiSpacing.xs) {

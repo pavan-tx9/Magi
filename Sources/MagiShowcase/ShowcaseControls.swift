@@ -11,7 +11,7 @@ extension ComponentShowcase {
 
             HStack(spacing: MagiSpacing.sm) {
                 MagiButton(label: "Execute", action: {})
-                MagiButton(label: "Abort", action: {}, accent: MagiColor.danger)
+                MagiButton(label: "Abort", action: {}, accent: theme.danger)
                 MagiChamferButton(label: "Deploy", action: {})
             }
 
@@ -72,7 +72,7 @@ extension ComponentShowcase {
                 MagiButton(label: "Custom Modal", action: { showModal = true })
                 MagiButton(label: "Confirm", action: { showConfirm = true })
                 MagiButton(label: "Destructive", action: { showDestructive = true },
-                           accent: MagiColor.danger)
+                           accent: theme.danger)
             }
 
             Text("Also available as view modifiers: .magiModal() and .magiConfirm()")
@@ -114,11 +114,11 @@ extension ComponentShowcase {
             SectionHeader(title: "Tags")
 
             HStack(spacing: MagiSpacing.sm) {
-                MagiTag(label: "Backend", color: MagiColor.accentCyan)
-                MagiTag(label: "Urgent", color: MagiColor.danger)
-                MagiTag(label: "Design", color: MagiColor.accentAmber)
-                MagiTag(label: "v0.1", color: MagiColor.accentGreen)
-                MagiTag(label: "Blocked", color: MagiColor.textMuted)
+                MagiTag(label: "Backend", color: theme.accentSecondary)
+                MagiTag(label: "Urgent", color: theme.danger)
+                MagiTag(label: "Design", color: theme.accentWarning)
+                MagiTag(label: "v0.1", color: theme.accentSuccess)
+                MagiTag(label: "Blocked")
             }
         }
     }
@@ -127,9 +127,9 @@ extension ComponentShowcase {
         VStack(alignment: .leading, spacing: MagiSpacing.sm) {
             SectionHeader(title: "Progress Bars")
 
-            progressRow(label: "SYNC", percent: "72%", value: 0.72, color: MagiColor.accentCyan)
-            progressRow(label: "MEMORY", percent: "87%", value: 0.87, color: MagiColor.accentAmber)
-            progressRow(label: "CRITICAL", percent: "96%", value: 0.96, color: MagiColor.danger)
+            progressRow(label: "SYNC", percent: "72%", value: 0.72, color: theme.accentSecondary)
+            progressRow(label: "MEMORY", percent: "87%", value: 0.87, color: theme.accentWarning)
+            progressRow(label: "CRITICAL", percent: "96%", value: 0.96, color: theme.danger)
         }
     }
 
@@ -179,10 +179,10 @@ extension ComponentShowcase {
             SectionHeader(title: "Data Readouts")
 
             VStack(alignment: .leading, spacing: MagiSpacing.xs) {
-                DataReadout(label: "Active", value: "4 operations", color: MagiColor.textPrimary)
-                DataReadout(label: "Overdue", value: "1 operation", color: MagiColor.danger)
-                DataReadout(label: "Completed", value: "37 this week", color: MagiColor.accentGreen)
-                DataReadout(label: "Uptime", value: "04:32:17", color: MagiColor.accentCyan)
+                DataReadout(label: "Active", value: "4 operations")
+                DataReadout(label: "Overdue", value: "1 operation", color: theme.danger)
+                DataReadout(label: "Completed", value: "37 this week", color: theme.accentSuccess)
+                DataReadout(label: "Uptime", value: "04:32:17", color: theme.accentSecondary)
             }
             .padding(MagiSpacing.md)
             .magiPanel()

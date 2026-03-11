@@ -1,32 +1,54 @@
 import SwiftUI
 
+// MARK: - Shared Button Border Overlay
+
+private struct ButtonBorderOverlay: ViewModifier {
+    let active: Bool
+    let inactiveColor: Color
+    @Environment(\.magiTheme) private var theme
+
+    func body(content: Content) -> some View {
+        content.overlay {
+            Rectangle()
+                .stroke(active ? theme.accent : inactiveColor, lineWidth: theme.style.borderWidth)
+        }
+    }
+}
+
+// MARK: - Button
+
 public struct MagiButton: View {
     public let label: String
     public let action: () -> Void
-    public var accent: Color
+    public var accent: Color?
 
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
+    @Environment(\.magiTheme) private var theme
 
-    public init(label: String, action: @escaping () -> Void, accent: Color = MagiColor.border) {
+    public init(label: String, action: @escaping () -> Void, accent: Color? = nil) {
         self.label = label
         self.action = action
         self.accent = accent
     }
 
     public var body: some View {
+        let active = isHovered || isFocused
+        let s = theme.style
         Button(action: action) {
             Text(label.uppercased())
-                .font(MagiFont.label)
-                .tracking(1)
-                .foregroundStyle((isHovered || isFocused) ? MagiColor.accentRed : MagiColor.textPrimary)
+                .font(theme.buttonFont)
+                .tracking(s.labelTracking)
+                .foregroundStyle(active ? theme.accent : theme.textPrimary)
                 .padding(.horizontal, MagiSpacing.md)
-                .padding(.vertical, 6)
+                .padding(.vertical, MagiSpacing.sm)
                 .contentShape(Rectangle())
-                .overlay {
-                    Rectangle()
-                        .stroke((isHovered || isFocused) ? MagiColor.accentRed : accent, lineWidth: 1)
+                .background {
+                    if s.buttonFillOnHover, active {
+                        Rectangle().fill(theme.accent.opacity(0.15))
+                    }
                 }
+                .modifier(ButtonBorderOverlay(active: active, inactiveColor: accent ?? theme.border))
         }
         .buttonStyle(.plain)
         .focused($isFocused)
@@ -34,6 +56,8 @@ public struct MagiButton: View {
         .accessibilityLabel(label)
     }
 }
+
+// MARK: - Chamfer Button
 
 public struct MagiChamferButton: View {
     public let label: String
@@ -41,6 +65,7 @@ public struct MagiChamferButton: View {
 
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
+    @Environment(\.magiTheme) private var theme
 
     public init(label: String, action: @escaping () -> Void) {
         self.label = label
@@ -48,17 +73,25 @@ public struct MagiChamferButton: View {
     }
 
     public var body: some View {
+        let active = isHovered || isFocused
+        let s = theme.style
+        let cut = max(s.chamferCut, 6)
         Button(action: action) {
             Text(label.uppercased())
-                .font(MagiFont.label)
-                .tracking(1)
-                .foregroundStyle((isHovered || isFocused) ? MagiColor.accentRed : MagiColor.textPrimary)
+                .font(theme.buttonFont)
+                .tracking(s.labelTracking)
+                .foregroundStyle(active ? theme.accent : theme.textPrimary)
                 .padding(.horizontal, MagiSpacing.lg)
-                .padding(.vertical, 6)
+                .padding(.vertical, MagiSpacing.sm)
                 .contentShape(Rectangle())
                 .background {
-                    ChamferShape(cut: 6)
-                        .stroke((isHovered || isFocused) ? MagiColor.accentRed : MagiColor.border, lineWidth: 1)
+                    if s.buttonFillOnHover, active {
+                        ChamferShape(cut: cut).fill(theme.accent.opacity(0.15))
+                    }
+                }
+                .background {
+                    ChamferShape(cut: cut)
+                        .stroke(active ? theme.accent : theme.border, lineWidth: s.borderWidth)
                 }
         }
         .buttonStyle(.plain)
@@ -68,12 +101,15 @@ public struct MagiChamferButton: View {
     }
 }
 
+// MARK: - Icon Button
+
 public struct MagiIconButton: View {
     public let symbol: String
     public let action: () -> Void
 
     @State private var isHovered = false
     @FocusState private var isFocused: Bool
+    @Environment(\.magiTheme) private var theme
 
     public init(symbol: String, action: @escaping () -> Void) {
         self.symbol = symbol
@@ -81,16 +117,20 @@ public struct MagiIconButton: View {
     }
 
     public var body: some View {
+        let active = isHovered || isFocused
+        let s = theme.style
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.system(size: 11, weight: .medium))
-                .foregroundStyle((isHovered || isFocused) ? MagiColor.accentRed : MagiColor.textMuted)
+                .font(.system(size: 11, weight: s.buttonWeight))
+                .foregroundStyle(active ? theme.accent : theme.textMuted)
                 .frame(width: 32, height: 32)
                 .contentShape(Rectangle())
-                .overlay {
-                    Rectangle()
-                        .stroke((isHovered || isFocused) ? MagiColor.accentRed : MagiColor.border, lineWidth: 1)
+                .background {
+                    if s.buttonFillOnHover, active {
+                        Rectangle().fill(theme.accent.opacity(0.15))
+                    }
                 }
+                .modifier(ButtonBorderOverlay(active: active, inactiveColor: theme.border))
         }
         .buttonStyle(.plain)
         .focused($isFocused)

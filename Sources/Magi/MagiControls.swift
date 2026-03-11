@@ -5,6 +5,7 @@ public struct MagiToggle: View {
     public var label: String?
 
     @State private var isHovered = false
+    @Environment(\.magiTheme) private var theme
 
     public init(isOn: Binding<Bool>, label: String? = nil) {
         self._isOn = isOn
@@ -21,11 +22,11 @@ public struct MagiToggle: View {
                 if let label {
                     Text(label)
                         .font(MagiFont.body)
-                        .foregroundStyle(isOn ? MagiColor.textPrimary : MagiColor.textMuted)
+                        .foregroundStyle(isOn ? theme.textPrimary : theme.textMuted)
                 }
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 2)
+            .padding(.vertical, MagiSpacing.xs)
+            .padding(.horizontal, MagiSpacing.xs)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -37,32 +38,32 @@ public struct MagiToggle: View {
     }
 
     private var toggleVisual: some View {
-        HStack(spacing: 0) {
+        let bw = theme.style.borderWidth
+        return HStack(spacing: 0) {
             Rectangle()
-                .fill(isOn ? MagiColor.accentRed : MagiColor.bgSurface)
+                .fill(isOn ? theme.accent : theme.bgSurface)
                 .frame(width: 18, height: 14)
                 .overlay {
                     if isOn {
                         Text("I")
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundStyle(MagiColor.textPrimary)
+                            .foregroundStyle(theme.textPrimary)
                     }
                 }
-
             Rectangle()
-                .fill(isOn ? MagiColor.bgSurface : MagiColor.textMuted.opacity(0.3))
+                .fill(isOn ? theme.bgSurface : theme.textMuted.opacity(0.3))
                 .frame(width: 18, height: 14)
                 .overlay {
                     if !isOn {
                         Text("O")
                             .font(.system(size: 9, weight: .bold, design: .monospaced))
-                            .foregroundStyle(MagiColor.textMuted)
+                            .foregroundStyle(theme.textMuted)
                     }
                 }
         }
         .overlay {
             Rectangle()
-                .stroke(isHovered ? MagiColor.accentRed : (isOn ? MagiColor.accentRed : MagiColor.border), lineWidth: 1)
+                .stroke(isHovered ? theme.accent : (isOn ? theme.accent : theme.border), lineWidth: bw)
         }
     }
 }
@@ -72,6 +73,7 @@ public struct MagiCheckbox: View {
     public var label: String?
 
     @State private var isHovered = false
+    @Environment(\.magiTheme) private var theme
 
     public init(isChecked: Binding<Bool>, label: String? = nil) {
         self._isChecked = isChecked
@@ -88,11 +90,11 @@ public struct MagiCheckbox: View {
                 if let label {
                     Text(label)
                         .font(MagiFont.body)
-                        .foregroundStyle(isChecked ? MagiColor.textPrimary : MagiColor.textMuted)
+                        .foregroundStyle(isChecked ? theme.textPrimary : theme.textMuted)
                 }
             }
-            .padding(.vertical, 4)
-            .padding(.horizontal, 2)
+            .padding(.vertical, MagiSpacing.xs)
+            .padding(.horizontal, MagiSpacing.xs)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -104,18 +106,19 @@ public struct MagiCheckbox: View {
     }
 
     private var checkboxVisual: some View {
-        Rectangle()
-            .fill(isChecked ? MagiColor.accentRed : .clear)
+        let bw = theme.style.borderWidth
+        return Rectangle()
+            .fill(isChecked ? theme.accent : .clear)
             .frame(width: 14, height: 14)
             .overlay {
                 Rectangle()
-                    .stroke(isHovered ? MagiColor.accentRed : (isChecked ? MagiColor.accentRed : MagiColor.textMuted), lineWidth: 1)
+                    .stroke(isHovered ? theme.accent : (isChecked ? theme.accent : theme.textMuted), lineWidth: bw)
             }
             .overlay {
                 if isChecked {
                     Image(systemName: "checkmark")
                         .font(.system(size: 8, weight: .bold))
-                        .foregroundStyle(MagiColor.textPrimary)
+                        .foregroundStyle(theme.textPrimary)
                 }
             }
     }

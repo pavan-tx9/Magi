@@ -1,18 +1,19 @@
 import SwiftUI
 
+@available(*, deprecated, message: "Use @Environment(\\.magiTheme) instead — MagiColor is hardwired to NERV and ignores the active theme")
 public enum MagiColor {
-    public static let bgPrimary = Color(hex: 0x0A0A0A)
-    public static let bgSecondary = Color(hex: 0x141414)
-    public static let bgSurface = Color(hex: 0x1A1A1A)
-    public static let border = Color(hex: 0x2A2A2A)
-    public static let borderFocus = Color(hex: 0xCC0000)
-    public static let textPrimary = Color(hex: 0xE0E0E0)
-    public static let textMuted = Color(hex: 0x707070)
-    public static let accentRed = Color(hex: 0xCC0000)
-    public static let accentAmber = Color(hex: 0xCC8800)
-    public static let accentGreen = Color(hex: 0x00AA66)
-    public static let accentCyan = Color(hex: 0x00AAAA)
-    public static let danger = Color(hex: 0xFF3333)
+    public static let bgPrimary = MagiTheme.nerv.bgPrimary
+    public static let bgSecondary = MagiTheme.nerv.bgSecondary
+    public static let bgSurface = MagiTheme.nerv.bgSurface
+    public static let border = MagiTheme.nerv.border
+    public static let borderFocus = MagiTheme.nerv.borderFocus
+    public static let textPrimary = MagiTheme.nerv.textPrimary
+    public static let textMuted = MagiTheme.nerv.textMuted
+    public static let accentRed = MagiTheme.nerv.accent
+    public static let accentAmber = MagiTheme.nerv.accentWarning
+    public static let accentGreen = MagiTheme.nerv.accentSuccess
+    public static let accentCyan = MagiTheme.nerv.accentSecondary
+    public static let danger = MagiTheme.nerv.danger
 }
 
 public enum MagiFont {
@@ -64,15 +65,18 @@ public struct ChamferShape: Shape {
 }
 
 public struct ScanLinesOverlay: View {
+    @Environment(\.magiTheme) private var theme
+
     public init() {}
 
     public var body: some View {
         Canvas { context, size in
-            let lineSpacing: CGFloat = 3
+            let lineSpacing = theme.style.scanLineSpacing
+            guard lineSpacing > 0 else { return }
             var y: CGFloat = 0
             while y < size.height {
                 let rect = CGRect(x: 0, y: y, width: size.width, height: 1)
-                context.fill(Path(rect), with: .color(.black.opacity(0.08)))
+                context.fill(Path(rect), with: .color(.black.opacity(theme.scanLineOpacity)))
                 y += lineSpacing
             }
         }

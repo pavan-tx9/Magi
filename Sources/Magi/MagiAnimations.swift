@@ -18,14 +18,12 @@ public struct HexGrid: View {
                 HStack(spacing: 3) {
                     let offset: CGFloat = row.isMultiple(of: 2) ? 0 : 10
                     Spacer().frame(width: offset)
-
                     ForEach(0..<columns, id: \.self) { col in
                         let idx = row * columns + col
                         if idx < statuses.count {
                             HexCell(color: statuses[idx])
                         }
                     }
-
                     if !row.isMultiple(of: 2) {
                         Spacer().frame(width: 10)
                     }
@@ -41,9 +39,7 @@ public struct HexCell: View {
     public let color: Color
     @Environment(\.colorSchemeContrast) private var contrast
 
-    public init(color: Color) {
-        self.color = color
-    }
+    public init(color: Color) { self.color = color }
 
     public var body: some View {
         HexShape()
@@ -55,12 +51,9 @@ public struct HexCell: View {
 
 public struct HexShape: Shape {
     public init() {}
-
     public func path(in rect: CGRect) -> Path {
         var path = Path()
-        let w = rect.width
-        let h = rect.height
-        let cx = rect.midX
+        let w = rect.width, h = rect.height, cx = rect.midX
         path.move(to: CGPoint(x: cx, y: 0))
         path.addLine(to: CGPoint(x: w, y: h * 0.25))
         path.addLine(to: CGPoint(x: w, y: h * 0.75))
@@ -78,59 +71,56 @@ public struct ReticleView: View {
     @State private var rotation: Double = 0
     @State private var pulse: Double = 1.0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    public var color: Color
+    @Environment(\.magiTheme) private var theme
+    public var color: Color?
     public var size: CGFloat
 
-    public init(color: Color = MagiColor.accentRed, size: CGFloat = 120) {
+    public init(color: Color? = nil, size: CGFloat = 120) {
         self.color = color
         self.size = size
     }
 
     public var body: some View {
+        let resolved = color ?? theme.accent
+        let intensity = theme.style.glowIntensity
         ZStack {
             Circle()
-                .stroke(color.opacity(0.3), lineWidth: 1)
+                .stroke(resolved.opacity(0.3), lineWidth: theme.style.borderWidth)
                 .frame(width: size, height: size)
-
             Circle()
                 .trim(from: 0, to: 0.25)
-                .stroke(color, lineWidth: 2)
+                .stroke(resolved, lineWidth: theme.style.borderWidth * 2)
                 .frame(width: size * 0.85, height: size * 0.85)
                 .rotationEffect(.degrees(rotation))
-                .shadow(color: color.opacity(0.4), radius: 6)
-
+                .shadow(color: resolved.opacity(0.4 * intensity), radius: 6)
             Circle()
                 .trim(from: 0.5, to: 0.75)
-                .stroke(color, lineWidth: 2)
+                .stroke(resolved, lineWidth: theme.style.borderWidth * 2)
                 .frame(width: size * 0.85, height: size * 0.85)
                 .rotationEffect(.degrees(rotation))
-                .shadow(color: color.opacity(0.4), radius: 6)
-
+                .shadow(color: resolved.opacity(0.4 * intensity), radius: 6)
             Circle()
                 .trim(from: 0, to: 0.15)
-                .stroke(MagiColor.accentCyan, lineWidth: 1)
+                .stroke(theme.accentSecondary, lineWidth: theme.style.borderWidth)
                 .frame(width: size * 0.6, height: size * 0.6)
                 .rotationEffect(.degrees(-rotation * 1.5))
-
             Circle()
                 .trim(from: 0.5, to: 0.65)
-                .stroke(MagiColor.accentCyan, lineWidth: 1)
+                .stroke(theme.accentSecondary, lineWidth: theme.style.borderWidth)
                 .frame(width: size * 0.6, height: size * 0.6)
                 .rotationEffect(.degrees(-rotation * 1.5))
-
             ForEach(0..<4, id: \.self) { i in
                 Rectangle()
-                    .fill(color.opacity(0.5))
+                    .fill(resolved.opacity(0.5))
                     .frame(width: 1, height: size * 0.15)
                     .offset(y: -size * 0.3)
                     .rotationEffect(.degrees(Double(i) * 90))
             }
-
             Circle()
-                .fill(color)
+                .fill(resolved)
                 .frame(width: 4, height: 4)
                 .scaleEffect(pulse)
-                .shadow(color: color.opacity(0.6), radius: 8)
+                .shadow(color: resolved.opacity(0.6 * intensity), radius: 8)
         }
         .onAppear {
             guard !reduceMotion else { return }
@@ -151,21 +141,24 @@ public struct BootSequence: View {
     @State private var lines: [BootLine] = []
     @State private var currentIndex = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    private let bootMessages: [(String, Color, Double)] = [
-        ("MAGI SYSTEM v0.1.0", MagiColor.accentRed, 0.0),
-        ("Initializing core modules...", MagiColor.textMuted, 0.3),
-        ("[OK] Task engine loaded", MagiColor.accentGreen, 0.6),
-        ("[OK] Persistence layer connected", MagiColor.accentGreen, 0.9),
-        ("[OK] UI subsystem ready", MagiColor.accentGreen, 1.2),
-        ("[WARN] Memory cache at 87%", MagiColor.accentAmber, 1.6),
-        ("[OK] Network interface bound", MagiColor.accentGreen, 2.0),
-        ("Running diagnostics...", MagiColor.textMuted, 2.4),
-        ("All systems nominal.", MagiColor.accentCyan, 3.0),
-        ("READY.", MagiColor.accentRed, 3.4),
-    ]
+    @Environment(\.magiTheme) private var theme
 
     public init() {}
+
+    private var bootMessages: [(String, Color, Double)] {
+        [
+            ("MAGI SYSTEM v0.1.0", theme.accent, 0.0),
+            ("Initializing core modules...", theme.textMuted, 0.3),
+            ("[OK] Task engine loaded", theme.accentSuccess, 0.6),
+            ("[OK] Persistence layer connected", theme.accentSuccess, 0.9),
+            ("[OK] UI subsystem ready", theme.accentSuccess, 1.2),
+            ("[WARN] Memory cache at 87%", theme.accentWarning, 1.6),
+            ("[OK] Network interface bound", theme.accentSuccess, 2.0),
+            ("Running diagnostics...", theme.textMuted, 2.4),
+            ("All systems nominal.", theme.accentSecondary, 3.0),
+            ("READY.", theme.accent, 3.4),
+        ]
+    }
 
     public var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -174,7 +167,6 @@ public struct BootSequence: View {
                     .font(MagiFont.body)
                     .foregroundStyle(line.color)
             }
-
             if currentIndex < bootMessages.count {
                 BlinkingCursor()
             }
@@ -208,10 +200,8 @@ public struct BootLine: Identifiable {
     public let id = UUID()
     public let text: String
     public let color: Color
-
     public init(text: String, color: Color) {
         self.text = text
         self.color = color
     }
 }
-

@@ -8,12 +8,12 @@ public enum OperationStatus: String {
     case overdue = "OVERDUE"
     case complete = "COMPLETE"
 
-    public var color: Color {
+    public func color(in theme: MagiTheme) -> Color {
         switch self {
-        case .nominal: return MagiColor.accentCyan
-        case .pending: return MagiColor.accentAmber
-        case .overdue: return MagiColor.danger
-        case .complete: return MagiColor.accentGreen
+        case .nominal: return theme.accentSecondary
+        case .pending: return theme.accentWarning
+        case .overdue: return theme.danger
+        case .complete: return theme.accentSuccess
         }
     }
 }
@@ -23,22 +23,25 @@ public struct StatusBadge: View {
 
     @State private var glowOpacity: Double = 0.3
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.magiTheme) private var theme
 
     public init(status: OperationStatus) {
         self.status = status
     }
 
     public var body: some View {
+        let statusColor = status.color(in: theme)
+        let intensity = theme.style.glowIntensity
         Text(status.rawValue)
             .font(MagiFont.tiny)
-            .tracking(1.5)
-            .foregroundStyle(status.color)
+            .tracking(theme.style.labelTracking)
+            .foregroundStyle(statusColor)
             .shadow(
-                color: status == .overdue ? status.color.opacity(glowOpacity) : .clear,
-                radius: 8
+                color: status == .overdue && intensity > 0 ? statusColor.opacity(glowOpacity * intensity) : .clear,
+                radius: theme.glowRadius
             )
             .onAppear {
-                guard status == .overdue, !reduceMotion else { return }
+                guard status == .overdue, !reduceMotion, theme.style.statusPulse else { return }
                 withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
                     glowOpacity = 0.8
                 }
@@ -51,24 +54,26 @@ public struct StatusBadge: View {
 
 public struct MagiTag: View {
     public let label: String
-    public var color: Color
+    public var color: Color?
     @Environment(\.colorSchemeContrast) private var contrast
+    @Environment(\.magiTheme) private var theme
 
-    public init(label: String, color: Color = MagiColor.textMuted) {
+    public init(label: String, color: Color? = nil) {
         self.label = label
         self.color = color
     }
 
     public var body: some View {
+        let resolved = color ?? theme.textMuted
         Text(label.uppercased())
             .font(MagiFont.tiny)
-            .tracking(1)
-            .foregroundStyle(color)
+            .tracking(theme.style.labelTracking - 0.5)
+            .foregroundStyle(resolved)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .overlay {
                 Rectangle()
-                    .stroke(color.opacity(contrast == .increased ? 0.8 : 0.4), lineWidth: 1)
+                    .stroke(resolved.opacity(contrast == .increased ? 0.8 : 0.4), lineWidth: theme.style.borderWidth)
             }
             .accessibilityLabel("Tag: \(label)")
     }
@@ -78,6 +83,7 @@ public struct MagiTag: View {
 
 public struct KeyHint: View {
     public let keys: [String]
+    @Environment(\.magiTheme) private var theme
 
     public init(keys: [String]) {
         self.keys = keys
@@ -87,14 +93,14 @@ public struct KeyHint: View {
         HStack(spacing: 2) {
             ForEach(keys, id: \.self) { key in
                 Text(key)
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                    .foregroundStyle(MagiColor.textMuted)
+                    .font(.system(size: 10, weight: theme.style.buttonWeight, design: .monospaced))
+                    .foregroundStyle(theme.textMuted)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 2)
-                    .background(MagiColor.bgSurface)
+                    .background(theme.bgSurface)
                     .overlay {
                         Rectangle()
-                            .stroke(MagiColor.border, lineWidth: 1)
+                            .stroke(theme.border, lineWidth: theme.style.borderWidth)
                     }
             }
         }
@@ -107,32 +113,30 @@ public struct KeyHint: View {
 
 public struct MagiProgress: View {
     public let value: Double
-    public var color: Color
+    public var color: Color?
     public var height: CGFloat
 
-    public init(value: Double, color: Color = MagiColor.accentRed, height: CGFloat = 4) {
+    @Environment(\.magiTheme) private var theme
+
+    public init(value: Double, color: Color? = nil, height: CGFloat = 4) {
         self.value = value
         self.color = color
         self.height = height
     }
 
     public var body: some View {
+        let resolved = color ?? theme.accent
+        let clamped = min(max(value, 0), 1)
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                Rectangle()
-                    .fill(MagiColor.bgSurface)
-
-                Rectangle()
-                    .fill(color)
-                    .frame(width: geo.size.width * min(max(value, 0), 1))
-
-                Rectangle()
-                    .stroke(MagiColor.border, lineWidth: 1)
+                Rectangle().fill(theme.bgSurface)
+                Rectangle().fill(resolved).frame(width: geo.size.width * clamped)
+                Rectangle().stroke(theme.border, lineWidth: theme.style.borderWidth)
             }
         }
         .frame(height: height)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Progress")
-        .accessibilityValue("\(Int(min(max(value, 0), 1) * 100)) percent")
+        .accessibilityValue("\(Int(clamped * 100)) percent")
     }
 }

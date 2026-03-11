@@ -23,11 +23,11 @@ public enum MagiModalAction {
         }
     }
 
-    var accent: Color {
+    func accent(in theme: MagiTheme) -> Color {
         switch self {
-        case .primary: return MagiColor.accentCyan
-        case .destructive: return MagiColor.danger
-        case .cancel: return MagiColor.border
+        case .primary: return theme.accentSecondary
+        case .destructive: return theme.danger
+        case .cancel: return theme.border
         }
     }
 }
@@ -40,6 +40,7 @@ public struct MagiModal<Content: View>: View {
     @ViewBuilder public let content: () -> Content
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.magiTheme) private var theme
     @State private var appeared = false
 
     public init(
@@ -75,12 +76,19 @@ public struct MagiModal<Content: View>: View {
     private var backdrop: some View {
         Rectangle()
             .fill(Color.black.opacity(appeared ? 0.6 : 0))
+            .overlay {
+                if appeared, theme.style.glowIntensity > 0 {
+                    Rectangle()
+                        .fill(theme.accent.opacity(0.03 * theme.style.glowIntensity))
+                }
+            }
             .allowsHitTesting(true)
             .accessibilityHidden(true)
     }
 
     private var dialogPanel: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        let s = theme.style
+        return VStack(alignment: .leading, spacing: 0) {
             titleBar
             MagiDivider()
             contentArea
@@ -88,9 +96,17 @@ public struct MagiModal<Content: View>: View {
             actionBar
         }
         .frame(minWidth: 320, maxWidth: 480)
-        .background(MagiColor.bgPrimary)
-        .overlay { Rectangle().stroke(MagiColor.border, lineWidth: 1) }
-        .overlay(alignment: .top) { accentLine }
+        .background(theme.bgSecondary)
+        .overlay { Rectangle().stroke(theme.border, lineWidth: s.borderWidth) }
+        .shadow(color: s.glowIntensity > 0 ? theme.accent.opacity(0.08 * s.glowIntensity) : .clear, radius: 8)
+        .overlay(alignment: .top) {
+            if s.modalAccentLine {
+                Rectangle()
+                    .fill(theme.accent)
+                    .frame(height: s.modalAccentLineHeight)
+                    .accessibilityHidden(true)
+            }
+        }
         .opacity(appeared ? 1 : 0)
         .scaleEffect(appeared ? 1 : 0.97)
     }
@@ -98,14 +114,14 @@ public struct MagiModal<Content: View>: View {
     private var titleBar: some View {
         HStack {
             Text(title.uppercased())
-                .font(MagiFont.label)
-                .tracking(1.5)
-                .foregroundStyle(MagiColor.textPrimary)
+                .font(theme.buttonFont)
+                .tracking(theme.style.labelTracking)
+                .foregroundStyle(theme.textPrimary)
             Spacer()
             Text("SYS")
                 .font(MagiFont.tiny)
-                .tracking(1)
-                .foregroundStyle(MagiColor.textMuted)
+                .tracking(theme.style.labelTracking - 0.5)
+                .foregroundStyle(theme.textMuted)
         }
         .padding(.horizontal, MagiSpacing.md)
         .padding(.vertical, MagiSpacing.sm)
@@ -114,7 +130,7 @@ public struct MagiModal<Content: View>: View {
     private var contentArea: some View {
         content()
             .font(MagiFont.body)
-            .foregroundStyle(MagiColor.textPrimary)
+            .foregroundStyle(theme.textPrimary)
             .padding(MagiSpacing.md)
     }
 
@@ -122,18 +138,11 @@ public struct MagiModal<Content: View>: View {
         HStack(spacing: MagiSpacing.sm) {
             Spacer()
             ForEach(Array(actions.enumerated()), id: \.offset) { _, action in
-                MagiButton(label: action.label, action: action.action, accent: action.accent)
+                MagiButton(label: action.label, action: action.action, accent: action.accent(in: theme))
             }
         }
         .padding(.horizontal, MagiSpacing.md)
         .padding(.vertical, MagiSpacing.sm)
-    }
-
-    private var accentLine: some View {
-        Rectangle()
-            .fill(MagiColor.accentRed)
-            .frame(height: 2)
-            .accessibilityHidden(true)
     }
 }
 
@@ -148,12 +157,9 @@ public struct MagiConfirmDialog: View {
     public var destructive: Bool
 
     public init(
-        title: String,
-        message: String,
-        confirmLabel: String = "Confirm",
+        title: String, message: String, confirmLabel: String = "Confirm",
         destructive: Bool = false,
-        onConfirm: @escaping () -> Void,
-        onCancel: @escaping () -> Void
+        onConfirm: @escaping () -> Void, onCancel: @escaping () -> Void
     ) {
         self.title = title
         self.message = message
@@ -165,8 +171,7 @@ public struct MagiConfirmDialog: View {
 
     public var body: some View {
         MagiModal(title: title, actions: dialogActions) {
-            Text(message)
-                .magiBody()
+            Text(message).magiBody()
         }
     }
 
@@ -174,10 +179,7 @@ public struct MagiConfirmDialog: View {
         let confirm: MagiModalAction = destructive
             ? .destructive(label: confirmLabel, action: onConfirm)
             : .primary(label: confirmLabel, action: onConfirm)
-        return [
-            .cancel(label: "Cancel", action: onCancel),
-            confirm,
-        ]
+        return [.cancel(label: "Cancel", action: onCancel), confirm]
     }
 }
 
@@ -185,9 +187,7 @@ public struct MagiConfirmDialog: View {
 
 public extension View {
     func magiModal<Content: View>(
-        isPresented: Binding<Bool>,
-        title: String,
-        actions: [MagiModalAction],
+        isPresented: Binding<Bool>, title: String, actions: [MagiModalAction],
         @ViewBuilder content: @escaping () -> Content
     ) -> some View {
         self.overlay {
@@ -198,19 +198,14 @@ public extension View {
     }
 
     func magiConfirm(
-        isPresented: Binding<Bool>,
-        title: String,
-        message: String,
-        confirmLabel: String = "Confirm",
-        destructive: Bool = false,
+        isPresented: Binding<Bool>, title: String, message: String,
+        confirmLabel: String = "Confirm", destructive: Bool = false,
         onConfirm: @escaping () -> Void
     ) -> some View {
         self.overlay {
             if isPresented.wrappedValue {
                 MagiConfirmDialog(
-                    title: title,
-                    message: message,
-                    confirmLabel: confirmLabel,
+                    title: title, message: message, confirmLabel: confirmLabel,
                     destructive: destructive,
                     onConfirm: {
                         isPresented.wrappedValue = false

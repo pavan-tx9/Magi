@@ -5,21 +5,23 @@ import SwiftUI
 public struct OscilloscopeView: View {
     @State private var phase: Double = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    public var color: Color
+    @Environment(\.magiTheme) private var theme
+    public var color: Color?
     public var amplitude: Double
     public var frequency: Double
 
-    public init(color: Color = MagiColor.accentGreen, amplitude: Double = 0.8, frequency: Double = 3) {
+    public init(color: Color? = nil, amplitude: Double = 0.8, frequency: Double = 3) {
         self.color = color
         self.amplitude = amplitude
         self.frequency = frequency
     }
 
     public var body: some View {
+        let resolved = color ?? theme.accentSuccess
+        let intensity = theme.style.glowIntensity
         Canvas { context, size in
             let midY = size.height / 2
             let step: CGFloat = 2
-
             drawGrid(context: context, size: size)
 
             var path = Path()
@@ -36,8 +38,8 @@ public struct OscilloscopeView: View {
                 }
                 x += step
             }
-            context.stroke(path, with: .color(color), lineWidth: 1.5)
-            context.stroke(path, with: .color(color.opacity(0.3)), lineWidth: 4)
+            context.stroke(path, with: .color(resolved), lineWidth: 1.5)
+            context.stroke(path, with: .color(resolved.opacity(0.3 * intensity)), lineWidth: 4)
         }
         .onAppear {
             guard !reduceMotion else { return }
@@ -47,18 +49,16 @@ public struct OscilloscopeView: View {
     }
 
     private func drawGrid(context: GraphicsContext, size: CGSize) {
-        let gridColor = MagiColor.border
-        let cols = 8
-        let rows = 4
-        for i in 0...cols {
-            let x = size.width * CGFloat(i) / CGFloat(cols)
+        let gridColor = theme.border
+        for i in 0...8 {
+            let x = size.width * CGFloat(i) / 8
             var line = Path()
             line.move(to: CGPoint(x: x, y: 0))
             line.addLine(to: CGPoint(x: x, y: size.height))
             context.stroke(line, with: .color(gridColor), lineWidth: 0.5)
         }
-        for i in 0...rows {
-            let y = size.height * CGFloat(i) / CGFloat(rows)
+        for i in 0...4 {
+            let y = size.height * CGFloat(i) / 4
             var line = Path()
             line.move(to: CGPoint(x: 0, y: y))
             line.addLine(to: CGPoint(x: size.width, y: y))
@@ -78,12 +78,12 @@ public struct OscilloscopeView: View {
 public struct CircularGauge: View {
     public let value: Double
     public let label: String
-    public var color: Color
+    public var color: Color?
     public var size: CGFloat
-
+    @Environment(\.magiTheme) private var theme
     private var angle: Double { value * 270 }
 
-    public init(value: Double, label: String, color: Color = MagiColor.accentRed, size: CGFloat = 90) {
+    public init(value: Double, label: String, color: Color? = nil, size: CGFloat = 90) {
         self.value = value
         self.label = label
         self.color = color
@@ -91,34 +91,32 @@ public struct CircularGauge: View {
     }
 
     public var body: some View {
+        let resolved = color ?? theme.accent
+        let arcWidth = theme.style.borderWidth * 3
         ZStack {
             Arc(startAngle: .degrees(135), endAngle: .degrees(45))
-                .stroke(MagiColor.border, lineWidth: 3)
+                .stroke(theme.border, lineWidth: arcWidth)
                 .frame(width: size, height: size)
-
             Arc(startAngle: .degrees(135), endAngle: .degrees(135 + angle))
-                .stroke(color, lineWidth: 3)
+                .stroke(resolved, lineWidth: arcWidth)
                 .frame(width: size, height: size)
-                .shadow(color: color.opacity(0.4), radius: 6)
-
+                .shadow(color: theme.style.glowIntensity > 0 ? resolved.opacity(0.4 * theme.style.glowIntensity) : .clear, radius: 6)
             ForEach(0..<10) { i in
                 let tickAngle = 135.0 + (Double(i) / 9.0 * 270.0)
                 Rectangle()
-                    .fill(MagiColor.textMuted)
+                    .fill(theme.textMuted)
                     .frame(width: 1, height: 5)
                     .offset(y: -(size / 2 - 2))
                     .rotationEffect(.degrees(tickAngle))
             }
-
             VStack(spacing: 0) {
                 Text("\(Int(value * 100))")
-                    .font(.system(size: size * 0.25, weight: .semibold, design: .monospaced))
-                    .foregroundStyle(color)
-
+                    .font(.system(size: size * 0.25, weight: theme.style.headingWeight, design: .monospaced))
+                    .foregroundStyle(resolved)
                 Text(label.uppercased())
-                    .font(.system(size: 7, weight: .medium, design: .monospaced))
-                    .tracking(1)
-                    .foregroundStyle(MagiColor.textMuted)
+                    .font(.system(size: 8, weight: theme.style.buttonWeight, design: .monospaced))
+                    .tracking(theme.style.labelTracking - 0.5)
+                    .foregroundStyle(theme.textMuted)
             }
         }
         .accessibilityElement(children: .ignore)
@@ -132,6 +130,7 @@ public struct CircularGauge: View {
 public struct BarChart: View {
     public let data: [(String, Double, Color)]
     public var height: CGFloat
+    @Environment(\.magiTheme) private var theme
 
     public init(data: [(String, Double, Color)], height: CGFloat = 100) {
         self.data = data
@@ -139,6 +138,7 @@ public struct BarChart: View {
     }
 
     public var body: some View {
+        let intensity = theme.style.glowIntensity
         VStack(spacing: 0) {
             HStack(alignment: .bottom, spacing: 4) {
                 ForEach(data, id: \.0) { item in
@@ -146,12 +146,11 @@ public struct BarChart: View {
                         Rectangle()
                             .fill(item.2)
                             .frame(height: max(2, height * item.1))
-                            .shadow(color: item.2.opacity(0.2), radius: 4)
-
+                            .shadow(color: intensity > 0 ? item.2.opacity(0.2 * intensity) : .clear, radius: 4)
                         Text(item.0)
-                            .font(.system(size: 7, weight: .medium, design: .monospaced))
+                            .font(.system(size: 8, weight: theme.style.buttonWeight, design: .monospaced))
                             .tracking(0.5)
-                            .foregroundStyle(MagiColor.textMuted)
+                            .foregroundStyle(theme.textMuted)
                     }
                 }
             }
@@ -171,19 +170,21 @@ public struct BarChart: View {
 
 public struct Sparkline: View {
     public let data: [Double]
-    public var color: Color
+    public var color: Color?
     public var height: CGFloat
+    @Environment(\.magiTheme) private var theme
 
-    public init(data: [Double], color: Color = MagiColor.accentCyan, height: CGFloat = 30) {
+    public init(data: [Double], color: Color? = nil, height: CGFloat = 30) {
         self.data = data
         self.color = color
         self.height = height
     }
 
     public var body: some View {
+        let resolved = color ?? theme.accentSecondary
+        let intensity = theme.style.glowIntensity
         Canvas { context, size in
             guard data.count > 1 else { return }
-
             let maxVal = data.max() ?? 1
             let minVal = data.min() ?? 0
             let range = max(maxVal - minVal, 0.01)
@@ -194,21 +195,17 @@ public struct Sparkline: View {
                 let x = CGFloat(i) * stepX
                 let normalized = (val - minVal) / range
                 let y = size.height - (normalized * size.height)
-                if i == 0 {
-                    path.move(to: CGPoint(x: x, y: y))
-                } else {
-                    path.addLine(to: CGPoint(x: x, y: y))
-                }
+                if i == 0 { path.move(to: CGPoint(x: x, y: y)) }
+                else { path.addLine(to: CGPoint(x: x, y: y)) }
             }
-
-            context.stroke(path, with: .color(color), lineWidth: 1.5)
-            context.stroke(path, with: .color(color.opacity(0.2)), lineWidth: 4)
+            context.stroke(path, with: .color(resolved), lineWidth: 1.5)
+            context.stroke(path, with: .color(resolved.opacity(0.2 * intensity)), lineWidth: 4)
 
             var fillPath = path
             fillPath.addLine(to: CGPoint(x: size.width, y: size.height))
             fillPath.addLine(to: CGPoint(x: 0, y: size.height))
             fillPath.closeSubpath()
-            context.fill(fillPath, with: .color(color.opacity(0.05)))
+            context.fill(fillPath, with: .color(resolved.opacity(0.05)))
         }
         .frame(height: height)
         .accessibilityElement(children: .ignore)

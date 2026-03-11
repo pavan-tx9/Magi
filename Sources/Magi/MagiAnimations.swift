@@ -13,23 +13,20 @@ public struct HexGrid: View {
 
     public var body: some View {
         let rows = (statuses.count + columns - 1) / columns
-        VStack(spacing: 3) {
+        VStack(alignment: .leading, spacing: 3) {
             ForEach(0..<rows, id: \.self) { row in
                 HStack(spacing: 3) {
-                    let offset: CGFloat = row.isMultiple(of: 2) ? 0 : 10
-                    Spacer().frame(width: offset)
                     ForEach(0..<columns, id: \.self) { col in
                         let idx = row * columns + col
                         if idx < statuses.count {
                             HexCell(color: statuses[idx])
                         }
                     }
-                    if !row.isMultiple(of: 2) {
-                        Spacer().frame(width: 10)
-                    }
                 }
+                .padding(.leading, row.isMultiple(of: 2) ? 0 : 10)
             }
         }
+        .fixedSize()
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Status grid, \(statuses.count) cells")
     }

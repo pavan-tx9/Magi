@@ -83,19 +83,17 @@ public struct RadarView: View {
             let elapsed = timeline.date.timeIntervalSince(startDate)
             let sweepAngle = elapsed.truncatingRemainder(dividingBy: 3) / 3 * 360
 
-            Canvas { context, canvasSize in
-                let cx = canvasSize.width / 2
-                let cy = canvasSize.height / 2
-                let radius = min(cx, cy)
-
-                drawGrid(context: context, cx: cx, cy: cy, radius: radius)
-                drawSweep(context: context, cx: cx, cy: cy, radius: radius, angle: sweepAngle, color: resolved)
-                drawSweepLine(context: context, cx: cx, cy: cy, radius: radius, angle: sweepAngle, color: resolved)
-                drawBlips(context: context, cx: cx, cy: cy, radius: radius, color: resolved, intensity: intensity)
-                drawCenter(context: context, cx: cx, cy: cy, color: resolved)
+            Canvas { context, _ in
+                let half = size / 2
+                drawGrid(context: context, cx: half, cy: half, radius: half)
+                drawSweep(context: context, cx: half, cy: half, radius: half, angle: sweepAngle, color: resolved)
+                drawSweepLine(context: context, cx: half, cy: half, radius: half, angle: sweepAngle, color: resolved)
+                drawBlips(context: context, cx: half, cy: half, radius: half, color: resolved, intensity: intensity)
+                drawCenter(context: context, cx: half, cy: half, color: resolved)
             }
         }
         .frame(width: size, height: size)
+        .fixedSize()
         .accessibilityLabel("Radar, \(blips.count) contacts")
     }
 }

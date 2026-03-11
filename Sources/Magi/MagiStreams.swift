@@ -119,13 +119,13 @@ private extension RadarView {
     }
 
     func drawSweep(context: GraphicsContext, cx: CGFloat, cy: CGFloat, radius: CGFloat, angle: Double, color: Color) {
-        let sweepSpan = 40.0
+        let halfSpan = 20.0
         let steps = 8
         for i in 0..<steps {
             let frac = Double(i) / Double(steps)
-            let startDeg = angle - sweepSpan + frac * sweepSpan
-            let endDeg = startDeg + sweepSpan / Double(steps)
-            let alpha = 0.03 + frac * 0.08
+            let startDeg = angle - halfSpan + frac * halfSpan * 2
+            let endDeg = startDeg + halfSpan * 2 / Double(steps)
+            let alpha = 0.03 + (1.0 - abs(frac - 0.5) * 2) * 0.08
 
             var wedge = Path()
             wedge.move(to: CGPoint(x: cx, y: cy))

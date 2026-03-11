@@ -57,7 +57,7 @@ public struct DataStream: View {
 // MARK: - Radar Sweep
 
 public struct RadarView: View {
-    @State private var sweepAngle: Double = 0
+    @State private var startDate = Date.now
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.magiTheme) private var theme
     public var color: Color?
@@ -79,65 +79,91 @@ public struct RadarView: View {
     public var body: some View {
         let resolved = color ?? theme.accentSuccess
         let intensity = theme.style.glowIntensity
-        ZStack {
-            ForEach(1..<4, id: \.self) { ring in
-                Circle()
-                    .stroke(theme.border, lineWidth: 0.5)
-                    .frame(
-                        width: size * CGFloat(ring) / 3,
-                        height: size * CGFloat(ring) / 3
-                    )
-            }
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion)) { timeline in
+            let elapsed = timeline.date.timeIntervalSince(startDate)
+            let sweepAngle = elapsed.truncatingRemainder(dividingBy: 3) / 3 * 360
 
-            Rectangle()
-                .fill(theme.border)
-                .frame(width: size, height: 0.5)
-            Rectangle()
-                .fill(theme.border)
-                .frame(width: 0.5, height: size)
+            Canvas { context, canvasSize in
+                let cx = canvasSize.width / 2
+                let cy = canvasSize.height / 2
+                let radius = min(cx, cy)
 
-            // Sweep trail — flat color arcs at decreasing opacity
-            ForEach(0..<4, id: \.self) { i in
-                let segAngle = 10.0
-                let offset = Double(i) * segAngle
-                Circle()
-                    .trim(
-                        from: CGFloat((sweepAngle - 40 + offset) / 360).truncatingRemainder(dividingBy: 1),
-                        to: CGFloat((sweepAngle - 40 + offset + segAngle) / 360).truncatingRemainder(dividingBy: 1)
-                    )
-                    .stroke(resolved.opacity(0.15 + Double(i) * 0.15), lineWidth: size / 2)
-                    .frame(width: size, height: size)
-            }
-            .clipShape(Circle())
-
-            Rectangle()
-                .fill(resolved)
-                .frame(width: 1, height: size / 2)
-                .offset(y: -size / 4)
-                .rotationEffect(.degrees(sweepAngle))
-
-            ForEach(0..<blips.count, id: \.self) { i in
-                let blip = blips[i]
-                Circle()
-                    .fill(resolved)
-                    .frame(width: 4, height: 4)
-                    .shadow(color: intensity > 0 ? resolved.opacity(0.6 * intensity) : .clear, radius: 4)
-                    .offset(
-                        x: blip.x * size / 2,
-                        y: blip.y * size / 2
-                    )
-            }
-
-            Circle()
-                .fill(resolved)
-                .frame(width: 3, height: 3)
-        }
-        .onAppear {
-            guard !reduceMotion else { return }
-            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                sweepAngle = 360
+                drawGrid(context: context, cx: cx, cy: cy, radius: radius)
+                drawSweep(context: context, cx: cx, cy: cy, radius: radius, angle: sweepAngle, color: resolved)
+                drawSweepLine(context: context, cx: cx, cy: cy, radius: radius, angle: sweepAngle, color: resolved)
+                drawBlips(context: context, cx: cx, cy: cy, radius: radius, color: resolved, intensity: intensity)
+                drawCenter(context: context, cx: cx, cy: cy, color: resolved)
             }
         }
+        .frame(width: size, height: size)
         .accessibilityLabel("Radar, \(blips.count) contacts")
+    }
+}
+
+private extension RadarView {
+
+    func drawGrid(context: GraphicsContext, cx: CGFloat, cy: CGFloat, radius: CGFloat) {
+        let borderColor = theme.border
+        for ring in 1..<4 {
+            let r = radius * CGFloat(ring) / 3
+            var circle = Path()
+            circle.addEllipse(in: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2))
+            context.stroke(circle, with: .color(borderColor), lineWidth: 0.5)
+        }
+        var hLine = Path()
+        hLine.move(to: CGPoint(x: cx - radius, y: cy))
+        hLine.addLine(to: CGPoint(x: cx + radius, y: cy))
+        context.stroke(hLine, with: .color(borderColor), lineWidth: 0.5)
+        var vLine = Path()
+        vLine.move(to: CGPoint(x: cx, y: cy - radius))
+        vLine.addLine(to: CGPoint(x: cx, y: cy + radius))
+        context.stroke(vLine, with: .color(borderColor), lineWidth: 0.5)
+    }
+
+    func drawSweep(context: GraphicsContext, cx: CGFloat, cy: CGFloat, radius: CGFloat, angle: Double, color: Color) {
+        let sweepSpan = 40.0
+        let steps = 8
+        for i in 0..<steps {
+            let frac = Double(i) / Double(steps)
+            let startDeg = angle - sweepSpan + frac * sweepSpan
+            let endDeg = startDeg + sweepSpan / Double(steps)
+            let alpha = 0.03 + frac * 0.08
+
+            var wedge = Path()
+            wedge.move(to: CGPoint(x: cx, y: cy))
+            wedge.addArc(
+                center: CGPoint(x: cx, y: cy), radius: radius,
+                startAngle: .degrees(startDeg - 90), endAngle: .degrees(endDeg - 90),
+                clockwise: false
+            )
+            wedge.closeSubpath()
+            context.fill(wedge, with: .color(color.opacity(alpha)))
+        }
+    }
+
+    func drawSweepLine(context: GraphicsContext, cx: CGFloat, cy: CGFloat, radius: CGFloat, angle: Double, color: Color) {
+        let rad = Angle.degrees(angle - 90).radians
+        var line = Path()
+        line.move(to: CGPoint(x: cx, y: cy))
+        line.addLine(to: CGPoint(x: cx + Foundation.cos(rad) * radius, y: cy + Foundation.sin(rad) * radius))
+        context.stroke(line, with: .color(color.opacity(0.8)), lineWidth: 1)
+    }
+
+    func drawBlips(context: GraphicsContext, cx: CGFloat, cy: CGFloat, radius: CGFloat, color: Color, intensity: Double) {
+        for blip in blips {
+            let bx = cx + blip.x * radius
+            let by = cy + blip.y * radius
+            let blipRect = CGRect(x: bx - 2, y: by - 2, width: 4, height: 4)
+            context.fill(Path(ellipseIn: blipRect), with: .color(color))
+            if intensity > 0 {
+                let glowRect = CGRect(x: bx - 4, y: by - 4, width: 8, height: 8)
+                context.fill(Path(ellipseIn: glowRect), with: .color(color.opacity(0.15 * intensity)))
+            }
+        }
+    }
+
+    func drawCenter(context: GraphicsContext, cx: CGFloat, cy: CGFloat, color: Color) {
+        let centerRect = CGRect(x: cx - 1.5, y: cy - 1.5, width: 3, height: 3)
+        context.fill(Path(ellipseIn: centerRect), with: .color(color))
     }
 }

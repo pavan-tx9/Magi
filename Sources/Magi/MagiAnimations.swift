@@ -32,11 +32,14 @@ public struct HexGrid: View {
                 }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Status grid, \(statuses.count) cells")
     }
 }
 
 public struct HexCell: View {
     public let color: Color
+    @Environment(\.colorSchemeContrast) private var contrast
 
     public init(color: Color) {
         self.color = color
@@ -44,8 +47,8 @@ public struct HexCell: View {
 
     public var body: some View {
         HexShape()
-            .fill(color.opacity(0.15))
-            .overlay { HexShape().stroke(color.opacity(0.5), lineWidth: 1) }
+            .fill(color.opacity(contrast == .increased ? 0.35 : 0.15))
+            .overlay { HexShape().stroke(color.opacity(contrast == .increased ? 0.85 : 0.5), lineWidth: 1) }
             .frame(width: 20, height: 18)
     }
 }
@@ -74,6 +77,7 @@ public struct HexShape: Shape {
 public struct ReticleView: View {
     @State private var rotation: Double = 0
     @State private var pulse: Double = 1.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     public var color: Color
     public var size: CGFloat
 
@@ -129,6 +133,7 @@ public struct ReticleView: View {
                 .shadow(color: color.opacity(0.6), radius: 8)
         }
         .onAppear {
+            guard !reduceMotion else { return }
             withAnimation(.linear(duration: 4).repeatForever(autoreverses: false)) {
                 rotation = 360
             }
@@ -136,6 +141,7 @@ public struct ReticleView: View {
                 pulse = 1.4
             }
         }
+        .accessibilityLabel("Targeting reticle")
     }
 }
 
@@ -144,6 +150,7 @@ public struct ReticleView: View {
 public struct BootSequence: View {
     @State private var lines: [BootLine] = []
     @State private var currentIndex = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let bootMessages: [(String, Color, Double)] = [
         ("MAGI SYSTEM v0.1.0", MagiColor.accentRed, 0.0),
@@ -174,15 +181,26 @@ public struct BootSequence: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onAppear { runSequence() }
+        .accessibilityElement(children: .combine)
     }
 
     private func runSequence() {
-        for (index, message) in bootMessages.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + message.2) {
+        if reduceMotion {
+            showAllLines()
+            return
+        }
+        Task { @MainActor in
+            for (index, message) in bootMessages.enumerated() {
+                try? await Task.sleep(for: .seconds(index == 0 ? message.2 : message.2 - bootMessages[index - 1].2))
                 lines.append(BootLine(text: message.0, color: message.1))
                 currentIndex = index + 1
             }
         }
+    }
+
+    private func showAllLines() {
+        lines = bootMessages.map { BootLine(text: $0.0, color: $0.1) }
+        currentIndex = bootMessages.count
     }
 }
 
@@ -197,133 +215,3 @@ public struct BootLine: Identifiable {
     }
 }
 
-// MARK: - Scrolling Data Stream
-
-public struct DataStream: View {
-    @State private var offset: CGFloat = 0
-    public var color: Color
-
-    private let chars = "0123456789ABCDEF"
-    private let columns = 16
-    private let rows = 6
-
-    public init(color: Color = MagiColor.accentGreen) {
-        self.color = color
-    }
-
-    public var body: some View {
-        Canvas { context, size in
-            let cellW = size.width / CGFloat(columns)
-            let cellH = size.height / CGFloat(rows)
-
-            for row in 0..<rows {
-                for col in 0..<columns {
-                    let seed = (row * columns + col + Int(offset)) * 7
-                    let charIndex = abs(seed) % chars.count
-                    let char = String(chars[chars.index(chars.startIndex, offsetBy: charIndex)])
-
-                    let opacity = 0.2 + Double((row + Int(offset / 3)) % rows) / Double(rows) * 0.8
-                    let point = CGPoint(x: CGFloat(col) * cellW + 4, y: CGFloat(row) * cellH + 2)
-
-                    context.drawLayer { ctx in
-                        ctx.opacity = opacity
-                        ctx.draw(
-                            Text(char)
-                                .font(.system(size: 11, weight: .regular, design: .monospaced))
-                                .foregroundColor(color),
-                            at: point,
-                            anchor: .topLeading
-                        )
-                    }
-                }
-            }
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 0.4).repeatForever(autoreverses: false)) {
-                offset = 100
-            }
-        }
-    }
-}
-
-// MARK: - Radar Sweep
-
-public struct RadarView: View {
-    @State private var sweepAngle: Double = 0
-    public var color: Color
-    public var size: CGFloat
-
-    private let blips: [CGPoint] = [
-        CGPoint(x: 0.3, y: -0.2),
-        CGPoint(x: -0.15, y: 0.35),
-        CGPoint(x: 0.5, y: 0.1),
-        CGPoint(x: -0.4, y: -0.3),
-        CGPoint(x: 0.1, y: -0.45),
-    ]
-
-    public init(color: Color = MagiColor.accentGreen, size: CGFloat = 140) {
-        self.color = color
-        self.size = size
-    }
-
-    public var body: some View {
-        ZStack {
-            ForEach(1..<4, id: \.self) { ring in
-                Circle()
-                    .stroke(MagiColor.border, lineWidth: 0.5)
-                    .frame(
-                        width: size * CGFloat(ring) / 3,
-                        height: size * CGFloat(ring) / 3
-                    )
-            }
-
-            Rectangle()
-                .fill(MagiColor.border)
-                .frame(width: size, height: 0.5)
-            Rectangle()
-                .fill(MagiColor.border)
-                .frame(width: 0.5, height: size)
-
-            AngularGradient(
-                stops: [
-                    .init(color: .clear, location: 0),
-                    .init(color: color.opacity(0.3), location: 0.95),
-                    .init(color: color.opacity(0.6), location: 1.0),
-                ],
-                center: .center,
-                startAngle: .degrees(sweepAngle - 40),
-                endAngle: .degrees(sweepAngle)
-            )
-            .clipShape(Circle())
-            .frame(width: size, height: size)
-
-            Rectangle()
-                .fill(color)
-                .frame(width: 1, height: size / 2)
-                .offset(y: -size / 4)
-                .rotationEffect(.degrees(sweepAngle))
-                .shadow(color: color.opacity(0.5), radius: 4)
-
-            ForEach(0..<blips.count, id: \.self) { i in
-                let blip = blips[i]
-                Circle()
-                    .fill(color)
-                    .frame(width: 4, height: 4)
-                    .shadow(color: color.opacity(0.6), radius: 4)
-                    .offset(
-                        x: blip.x * size / 2,
-                        y: blip.y * size / 2
-                    )
-            }
-
-            Circle()
-                .fill(color)
-                .frame(width: 3, height: 3)
-        }
-        .onAppear {
-            withAnimation(.linear(duration: 3).repeatForever(autoreverses: false)) {
-                sweepAngle = 360
-            }
-        }
-    }
-}

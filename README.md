@@ -77,6 +77,27 @@ Requires macOS 14+.
 | `ScanLinesOverlay` | CRT scan line effect |
 | `MagiDivider` | 1px horizontal rule |
 
+### View Modifiers
+
+| Modifier | Description |
+|----------|-------------|
+| `.magiWindow()` | Full window treatment: background, font, scan lines |
+| `.magiPanel()` | Bordered panel with secondary background |
+| `.magiPanel(accent:)` | Panel with custom accent border |
+| `.magiChamferPanel()` | Angled-corner panel variant |
+| `.magiSurface()` | Surface background without border |
+
+### Text Modifiers
+
+| Modifier | Description |
+|----------|-------------|
+| `.magiBody()` | 13px monospace, primary color |
+| `.magiBodyMuted()` | 13px monospace, muted color |
+| `.magiHeading()` | 15px semibold, primary color |
+| `.magiHeadingLarge()` | 18px semibold, primary color |
+| `.magiLabel()` | 10px uppercase with tracking, muted |
+| `.magiLabelWide()` | Same as label with wider tracking |
+
 ## Example
 
 ```swift
@@ -94,8 +115,7 @@ struct MyView: View {
             MagiButton(label: "Execute", action: { })
         }
         .padding(MagiSpacing.lg)
-        .background(MagiColor.bgPrimary)
-        .overlay { ScanLinesOverlay() }
+        .magiWindow()
     }
 }
 ```

@@ -22,6 +22,7 @@ public struct StatusBadge: View {
     public let status: OperationStatus
 
     @State private var glowOpacity: Double = 0.3
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(status: OperationStatus) {
         self.status = status
@@ -37,11 +38,12 @@ public struct StatusBadge: View {
                 radius: 8
             )
             .onAppear {
-                guard status == .overdue else { return }
+                guard status == .overdue, !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
                     glowOpacity = 0.8
                 }
             }
+            .accessibilityLabel("Status: \(status.rawValue.lowercased())")
     }
 }
 
@@ -50,6 +52,7 @@ public struct StatusBadge: View {
 public struct MagiTag: View {
     public let label: String
     public var color: Color
+    @Environment(\.colorSchemeContrast) private var contrast
 
     public init(label: String, color: Color = MagiColor.textMuted) {
         self.label = label
@@ -65,8 +68,9 @@ public struct MagiTag: View {
             .padding(.vertical, 2)
             .overlay {
                 Rectangle()
-                    .stroke(color.opacity(0.4), lineWidth: 1)
+                    .stroke(color.opacity(contrast == .increased ? 0.8 : 0.4), lineWidth: 1)
             }
+            .accessibilityLabel("Tag: \(label)")
     }
 }
 
@@ -94,6 +98,8 @@ public struct KeyHint: View {
                     }
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(keys.joined(separator: " "))
     }
 }
 
@@ -125,5 +131,8 @@ public struct MagiProgress: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Progress")
+        .accessibilityValue("\(Int(min(max(value, 0), 1) * 100)) percent")
     }
 }

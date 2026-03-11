@@ -77,6 +77,7 @@ public struct ScanLinesOverlay: View {
             }
         }
         .allowsHitTesting(false)
+        .accessibilityHidden(true)
     }
 }
 

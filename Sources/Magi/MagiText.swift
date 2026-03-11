@@ -22,6 +22,7 @@ public struct GlowText: View {
 
 public struct BlinkingCursor: View {
     @State private var visible = true
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
@@ -31,9 +32,11 @@ public struct BlinkingCursor: View {
             .frame(width: 2, height: 14)
             .opacity(visible ? 1 : 0)
             .onAppear {
+                guard !reduceMotion else { return }
                 withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) {
                     visible = false
                 }
             }
+            .accessibilityHidden(true)
     }
 }

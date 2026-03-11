@@ -27,6 +27,7 @@ public struct MagiTextField: View {
                 .stroke(isFocused ? MagiColor.borderFocus : MagiColor.border, lineWidth: 1)
         }
         .focused($isFocused)
+        .accessibilityLabel(placeholder)
     }
 }
 
@@ -61,5 +62,7 @@ public struct CommandBar: View {
             Rectangle()
                 .stroke(isFocused ? MagiColor.borderFocus : MagiColor.border, lineWidth: 1)
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Command bar")
     }
 }

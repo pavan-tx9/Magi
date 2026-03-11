@@ -17,6 +17,25 @@ public enum MagiPriority {
         case .done: return MagiColor.accentGreen
         }
     }
+
+    public var accessibilityDescription: String {
+        switch self {
+        case .none: return ""
+        case .normal: return "normal priority"
+        case .dueSoon: return "due soon"
+        case .overdue: return "overdue"
+        case .done: return "completed"
+        }
+    }
+
+    public var symbolPrefix: String? {
+        switch self {
+        case .none, .normal: return nil
+        case .dueSoon: return "[!]"
+        case .overdue: return "[!!]"
+        case .done: return "[OK]"
+        }
+    }
 }
 
 public struct TaskRow: View {
@@ -24,8 +43,8 @@ public struct TaskRow: View {
     public let metadata: String
     public let priority: MagiPriority
     public var tags: [String]
-
     @State private var isHovered = false
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var diffWithoutColor
 
     private var isDone: Bool { priority == .done }
 
@@ -43,6 +62,12 @@ public struct TaskRow: View {
                 .frame(width: 2)
 
             HStack(spacing: MagiSpacing.sm) {
+                if diffWithoutColor, let prefix = priority.symbolPrefix {
+                    Text(prefix)
+                        .font(MagiFont.tiny)
+                        .foregroundStyle(priority.barColor ?? MagiColor.textMuted)
+                }
+
                 Text(title)
                     .font(MagiFont.body)
                     .foregroundStyle(isDone ? MagiColor.textMuted : MagiColor.textPrimary)
@@ -64,8 +89,23 @@ public struct TaskRow: View {
             .padding(.vertical, 6)
         }
         .frame(height: 32)
+        .contentShape(Rectangle())
         .background(isHovered ? MagiColor.bgSurface : MagiColor.bgSecondary)
         .onHover { isHovered = $0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(taskAccessibilityLabel)
+    }
+
+    private var taskAccessibilityLabel: String {
+        var parts = [title]
+        if !priority.accessibilityDescription.isEmpty {
+            parts.append(priority.accessibilityDescription)
+        }
+        if !tags.isEmpty {
+            parts.append("tags: \(tags.joined(separator: ", "))")
+        }
+        parts.append(metadata)
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -98,15 +138,15 @@ public struct DataReadout: View {
                 .font(MagiFont.body)
                 .foregroundStyle(color)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label): \(value)")
     }
 }
 
 // MARK: - Alert Banner
 
 public enum AlertLevel {
-    case info
-    case warning
-    case critical
+    case info, warning, critical
 
     public var color: Color {
         switch self {
@@ -128,6 +168,7 @@ public enum AlertLevel {
 public struct AlertBanner: View {
     public let level: AlertLevel
     public let message: String
+    @Environment(\.colorSchemeContrast) private var contrast
 
     public init(level: AlertLevel, message: String) {
         self.level = level
@@ -154,11 +195,13 @@ public struct AlertBanner: View {
         }
         .padding(.vertical, 6)
         .padding(.trailing, MagiSpacing.md)
-        .background(level.color.opacity(0.06))
+        .background(level.color.opacity(contrast == .increased ? 0.15 : 0.06))
         .overlay {
             Rectangle()
-                .stroke(level.color.opacity(0.2), lineWidth: 1)
+                .stroke(level.color.opacity(contrast == .increased ? 0.5 : 0.2), lineWidth: 1)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(level.prefix): \(message)")
     }
 }
 
@@ -202,8 +245,19 @@ public struct SidebarItem: View {
             .padding(.horizontal, MagiSpacing.md)
             .padding(.vertical, 6)
         }
+        .contentShape(Rectangle())
         .background(isHovered ? MagiColor.bgSurface : .clear)
         .onHover { isHovered = $0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(sidebarAccessibilityLabel)
+        .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
+    }
+
+    private var sidebarAccessibilityLabel: String {
+        if let count {
+            return "\(label), \(count) items"
+        }
+        return label
     }
 }
 
@@ -226,7 +280,9 @@ public struct SectionHeader: View {
             Rectangle()
                 .fill(MagiColor.border)
                 .frame(height: 1)
+                .accessibilityHidden(true)
         }
+        .accessibilityAddTraits(.isHeader)
     }
 }
 
@@ -239,5 +295,6 @@ public struct MagiDivider: View {
         Rectangle()
             .fill(MagiColor.border)
             .frame(height: 1)
+            .accessibilityHidden(true)
     }
 }

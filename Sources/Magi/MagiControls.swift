@@ -30,6 +30,10 @@ public struct MagiToggle: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label ?? "Toggle")
+        .accessibilityValue(isOn ? "on" : "off")
+        .accessibilityAddTraits(.isToggle)
     }
 
     private var toggleVisual: some View {
@@ -93,6 +97,10 @@ public struct MagiCheckbox: View {
         }
         .buttonStyle(.plain)
         .onHover { isHovered = $0 }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(label ?? "Checkbox")
+        .accessibilityValue(isChecked ? "checked" : "unchecked")
+        .accessibilityAddTraits(.isToggle)
     }
 
     private var checkboxVisual: some View {

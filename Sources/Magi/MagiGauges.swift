@@ -4,6 +4,7 @@ import SwiftUI
 
 public struct OscilloscopeView: View {
     @State private var phase: Double = 0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     public var color: Color
     public var amplitude: Double
     public var frequency: Double
@@ -38,7 +39,11 @@ public struct OscilloscopeView: View {
             context.stroke(path, with: .color(color), lineWidth: 1.5)
             context.stroke(path, with: .color(color.opacity(0.3)), lineWidth: 4)
         }
-        .onAppear { animate() }
+        .onAppear {
+            guard !reduceMotion else { return }
+            animate()
+        }
+        .accessibilityLabel("Oscilloscope waveform")
     }
 
     private func drawGrid(context: GraphicsContext, size: CGSize) {
@@ -116,6 +121,9 @@ public struct CircularGauge: View {
                     .foregroundStyle(MagiColor.textMuted)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) gauge")
+        .accessibilityValue("\(Int(value * 100)) percent")
     }
 }
 
@@ -149,6 +157,13 @@ public struct BarChart: View {
             }
             .frame(height: height + 16)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(barChartAccessibilityLabel)
+    }
+
+    private var barChartAccessibilityLabel: String {
+        let items = data.map { "\($0.0): \(Int($0.1 * 100))%" }
+        return "Bar chart. \(items.joined(separator: ", "))"
     }
 }
 
@@ -196,5 +211,14 @@ public struct Sparkline: View {
             context.fill(fillPath, with: .color(color.opacity(0.05)))
         }
         .frame(height: height)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(sparklineAccessibilityLabel)
+    }
+
+    private var sparklineAccessibilityLabel: String {
+        guard let min = data.min(), let max = data.max() else {
+            return "Sparkline chart, no data"
+        }
+        return "Sparkline chart, \(data.count) points, range \(Int(min)) to \(Int(max))"
     }
 }
